@@ -1,15 +1,15 @@
 # Azure ImageGen Plugin
 
-`azure-imagegen` is a Codex plugin that packages an Azure-first image generation skill plus a bundled Python CLI for Azure OpenAI v1 image workflows.
+`azure-imagegen` is a GitHub Copilot CLI plugin that packages an Azure-first image generation skill plus a bundled Python CLI for Azure OpenAI v1 image workflows.
 
-The installable unit is the repository root. The existing skill at [`skills/azure-imagegen`](./skills/azure-imagegen) remains usable for direct skill installs during transition, but plugin installation is now the primary path.
+The installable unit is the repository root. GitHub Copilot CLI discovers the root [`plugin.json`](./plugin.json) manifest and loads the skill from [`skills/azure-imagegen`](./skills/azure-imagegen).
 
 ## What it includes
 
-- plugin manifest at [`.codex-plugin/plugin.json`](./.codex-plugin/plugin.json)
-- Codex skill at [`skills/azure-imagegen`](./skills/azure-imagegen)
+- GitHub Copilot CLI plugin manifest at [`plugin.json`](./plugin.json)
+- Copilot skill at [`skills/azure-imagegen`](./skills/azure-imagegen)
 - bundled CLI at [`skills/azure-imagegen/scripts/image_gen.py`](./skills/azure-imagegen/scripts/image_gen.py)
-- plugin UI assets under [`assets/`](./assets)
+- repository documentation assets under [`assets/`](./assets)
 - validation tests and CI smoke checks
 
 ## Scope
@@ -21,84 +21,34 @@ The installable unit is the repository root. The existing skill at [`skills/azur
 
 ## Install As A Plugin
 
-Preferred home-local install:
+Install from the repository root while developing locally:
 
 ```powershell
-git clone https://github.com/openassistuk/azure-imagegen.git "$HOME\plugins\azure-imagegen"
+copilot plugin install .
 ```
 
-Preferred repo-local install inside a project that should use the plugin:
+Install from GitHub:
 
 ```powershell
-git clone https://github.com/openassistuk/azure-imagegen.git ".\plugins\azure-imagegen"
+copilot plugin install openassistuk/azure-imagegen
 ```
 
-This repository does not commit a marketplace catalog because it is a single plugin. Register it in your local marketplace instead.
-
-Home-local marketplace file: `~/.agents/plugins/marketplace.json`
-
-```json
-{
-  "name": "local-plugins",
-  "interface": {
-    "displayName": "Local Plugins"
-  },
-  "plugins": [
-    {
-      "name": "azure-imagegen",
-      "source": {
-        "source": "local",
-        "path": "./plugins/azure-imagegen"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Productivity"
-    }
-  ]
-}
-```
-
-Repo-local marketplace file: `.agents/plugins/marketplace.json`
-
-```json
-{
-  "name": "project-plugins",
-  "interface": {
-    "displayName": "Project Plugins"
-  },
-  "plugins": [
-    {
-      "name": "azure-imagegen",
-      "source": {
-        "source": "local",
-        "path": "./plugins/azure-imagegen"
-      },
-      "policy": {
-        "installation": "AVAILABLE",
-        "authentication": "ON_INSTALL"
-      },
-      "category": "Productivity"
-    }
-  ]
-}
-```
-
-After registration, Codex can discover the plugin and the bundled skill will still trigger as `$azure-imagegen`.
-
-## Legacy Skill-Only Install
-
-If you only want the skill and not the plugin packaging, copy [`skills/azure-imagegen`](./skills/azure-imagegen) into one of these locations:
-
-- `~/.codex/skills/azure-imagegen`
-- `.agents/skills/azure-imagegen`
-
-Example:
+List installed plugins:
 
 ```powershell
-New-Item -ItemType Directory -Force "$HOME\.codex\skills" | Out-Null
-Copy-Item -Recurse ".\skills\azure-imagegen" "$HOME\.codex\skills\azure-imagegen"
+copilot plugin list
+```
+
+Update the plugin:
+
+```powershell
+copilot plugin update azure-imagegen
+```
+
+Uninstall the plugin:
+
+```powershell
+copilot plugin uninstall azure-imagegen
 ```
 
 ## Dependency Setup
@@ -133,6 +83,7 @@ The runtime dependency set is:
 
 - `openai`
 - `pillow`
+- `python-dotenv`
 - optional `azure-identity` for live Entra-authenticated runs
 - optional ImageMagick `magick` CLI for local transparent-background post-processing
 
@@ -155,6 +106,8 @@ AZURE_OPENAI_ENDPOINT
 AZURE_OPENAI_DEPLOYMENT
 AZURE_OPENAI_API_KEY
 ```
+
+For local development, copy the root `.env.sample` values into a root `.env` file. The CLI loads that file when it exists, while already-exported process environment variables remain authoritative.
 
 For deeper CLI usage and prompt recipes, use the bundled skill references instead of this README:
 
@@ -202,10 +155,12 @@ python -m pip install -e ".[dev,entra]"
 pytest
 ```
 
-If you have the Codex `skill-creator` tooling installed locally, you can also run:
+If GitHub Copilot CLI is installed locally, verify plugin discovery from the repository root:
 
-```bash
-python ~/.codex/skills/.system/skill-creator/scripts/quick_validate.py skills/azure-imagegen
+```powershell
+copilot plugin install .
+copilot plugin list
+copilot plugin uninstall azure-imagegen
 ```
 
 GitHub Actions runs packaging validation and dry-run smoke tests on pull requests, pushes to `main`, and version tags matching `v*`.

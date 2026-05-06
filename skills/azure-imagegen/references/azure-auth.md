@@ -18,6 +18,8 @@ AZURE_OPENAI_DEPLOYMENT
 AZURE_OPENAI_API_KEY
 ```
 
+For local development, place these values in a repo-root `.env` file based on `.env.sample`. The CLI loads that file when present, and process environment variables override matching `.env` entries.
+
 Use custom env-var names when a team already standardizes different names:
 
 ```powershell

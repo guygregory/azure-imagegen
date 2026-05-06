@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "azure-imagegen"
 version = "0.2.0"
-description = "Azure OpenAI image generation and editing plugin for Codex with a bundled Python CLI."
+description = "Azure OpenAI image generation and editing plugin for GitHub Copilot CLI with a bundled Python CLI."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -13,13 +13,14 @@ authors = [{ name = "OpenAssist UK" }]
 keywords = [
   "azure-openai",
   "image-generation",
-  "codex-skill",
+  "copilot-cli-plugin",
   "plugin",
   "python",
 ]
 dependencies = [
   "openai>=1.0.0",
   "pillow>=10.0.0",
+  "python-dotenv>=1.0.0",
 ]
 
 [project.optional-dependencies]

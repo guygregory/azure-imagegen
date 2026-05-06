@@ -19,6 +19,8 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from io import BytesIO
 
+from dotenv import load_dotenv
+
 DEFAULT_SIZE = "1024x1024"
 DEFAULT_QUALITY = "high"
 DEFAULT_OUTPUT_FORMAT = "png"
@@ -69,6 +71,12 @@ def _die(message: str, code: int = 1) -> None:
 
 def _warn(message: str) -> None:
     print(f"Warning: {message}", file=sys.stderr)
+
+
+def _load_repo_dotenv() -> None:
+    dotenv_path = Path(__file__).resolve().parents[3] / ".env"
+    if dotenv_path.is_file():
+        load_dotenv(dotenv_path=dotenv_path, override=False)
 
 
 def _read_prompt(prompt: Optional[str], prompt_file: Optional[str]) -> str:
@@ -1138,6 +1146,8 @@ def _add_shared_args(parser: argparse.ArgumentParser) -> None:
 
 
 def main() -> int:
+    _load_repo_dotenv()
+
     parser = argparse.ArgumentParser(
         description="Generate or edit images via Azure OpenAI v1 Image API"
     )

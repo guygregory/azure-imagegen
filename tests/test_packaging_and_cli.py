@@ -15,8 +15,15 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = REPO_ROOT / "skills" / "azure-imagegen" / "scripts" / "image_gen.py"
 SKILL_PATH = REPO_ROOT / "skills" / "azure-imagegen" / "SKILL.md"
-OPENAI_YAML_PATH = REPO_ROOT / "skills" / "azure-imagegen" / "agents" / "openai.yaml"
-PLUGIN_MANIFEST_PATH = REPO_ROOT / ".codex-plugin" / "plugin.json"
+PLUGIN_MANIFEST_PATH = REPO_ROOT / "plugin.json"
+CODEX_PLUGIN_MANIFEST_PATH = REPO_ROOT / ".codex-plugin" / "plugin.json"
+SAMPLE_ENV_PATH = REPO_ROOT / ".env.sample"
+DOTENV_PATH = REPO_ROOT / ".env"
+AZURE_OPENAI_ENV_VARS = {
+    "AZURE_OPENAI_ENDPOINT",
+    "AZURE_OPENAI_DEPLOYMENT",
+    "AZURE_OPENAI_API_KEY",
+}
 ONE_PIXEL_PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="
 )
@@ -47,6 +54,22 @@ def _write_png(path: Path) -> None:
     path.write_bytes(ONE_PIXEL_PNG)
 
 
+@pytest.fixture()
+def temporary_repo_dotenv():
+    original_bytes = DOTENV_PATH.read_bytes() if DOTENV_PATH.exists() else None
+    try:
+        yield DOTENV_PATH
+    finally:
+        if original_bytes is None:
+            DOTENV_PATH.unlink(missing_ok=True)
+        else:
+            DOTENV_PATH.write_bytes(original_bytes)
+
+
+def _env_without_azure_openai() -> dict[str, str]:
+    return {key: value for key, value in os.environ.items() if key not in AZURE_OPENAI_ENV_VARS}
+
+
 def _run_generate(deployment: str, *args: str) -> subprocess.CompletedProcess[str]:
     return _run_cli(
         "generate",
@@ -68,31 +91,47 @@ def _load_skill_frontmatter() -> dict:
     return yaml.safe_load(match.group(1))
 
 
-def test_plugin_manifest_references_existing_assets() -> None:
+def test_copilot_plugin_manifest_is_valid() -> None:
     manifest = json.loads(PLUGIN_MANIFEST_PATH.read_text(encoding="utf-8"))
 
     assert manifest["name"] == "azure-imagegen"
+    assert re.match(r"^[a-z0-9-]{1,64}$", manifest["name"])
     assert re.match(r"^\d+\.\d+\.\d+$", manifest["version"])
-    assert manifest["skills"] == "./skills/"
+    assert manifest["description"].startswith("Azure OpenAI v1 image generation")
+    assert manifest["author"]["name"] == "OpenAssist UK"
+    assert manifest["repository"] == "https://github.com/openassistuk/azure-imagegen"
+    assert manifest["license"] == "MIT"
+    assert "copilot-cli-plugin" in manifest["keywords"]
+    assert manifest["category"] == "Productivity"
+    assert manifest["skills"] == "skills/"
+    assert (REPO_ROOT / manifest["skills"]).is_dir()
+    assert "interface" not in manifest
 
-    interface = manifest["interface"]
-    assert len(interface["defaultPrompt"]) == 3
+    codex_only_keys = {
+        "brandColor",
+        "capabilities",
+        "composerIcon",
+        "developerName",
+        "displayName",
+        "logo",
+        "screenshots",
+    }
+    assert codex_only_keys.isdisjoint(manifest)
 
-    asset_keys = ["composerIcon", "logo"]
-    asset_paths = [interface[key] for key in asset_keys] + interface["screenshots"]
-    for rel_path in asset_paths:
-        assert rel_path.startswith("./")
-        assert (REPO_ROOT / rel_path.removeprefix("./")).is_file()
+
+def test_codex_plugin_manifest_was_removed() -> None:
+    assert not CODEX_PLUGIN_MANIFEST_PATH.exists()
 
 
 def test_skill_metadata_matches_plugin_packaging() -> None:
     frontmatter = _load_skill_frontmatter()
-    openai_yaml = yaml.safe_load(OPENAI_YAML_PATH.read_text(encoding="utf-8"))
+    manifest = json.loads(PLUGIN_MANIFEST_PATH.read_text(encoding="utf-8"))
     skill_text = SKILL_PATH.read_text(encoding="utf-8")
+    skill_root = REPO_ROOT / manifest["skills"]
 
     assert frontmatter["name"] == "azure-imagegen"
     assert "Generate, edit, and batch-create images" in frontmatter["description"]
-    assert "$azure-imagegen" in openai_yaml["interface"]["default_prompt"]
+    assert SKILL_PATH.is_relative_to(skill_root)
     assert "gpt-image-1.5" not in skill_text
 
 
@@ -103,6 +142,71 @@ def test_generate_help_smoke() -> None:
     assert "generate-batch" in result.stdout
     assert "edit" in result.stdout
     assert "postprocess-transparent" in result.stdout
+
+
+def test_env_sample_lists_all_supported_env_vars() -> None:
+    assert SAMPLE_ENV_PATH.is_file()
+    env_var_names = {
+        line.split("=", 1)[0]
+        for line in SAMPLE_ENV_PATH.read_text(encoding="utf-8").splitlines()
+        if line and not line.startswith("#")
+    }
+
+    assert env_var_names == AZURE_OPENAI_ENV_VARS
+
+
+def test_generate_loads_repo_root_dotenv(temporary_repo_dotenv: Path) -> None:
+    temporary_repo_dotenv.write_text(
+        "AZURE_OPENAI_ENDPOINT=https://dotenv.example.openai.azure.com\n"
+        "AZURE_OPENAI_DEPLOYMENT=gpt-image-dotenv\n"
+        "AZURE_OPENAI_API_KEY=dotenv-key\n",
+        encoding="utf-8",
+    )
+
+    result = _run_cli_with_env(
+        "generate",
+        "--prompt",
+        "dotenv smoke test",
+        "--dry-run",
+        env=_env_without_azure_openai(),
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["azure"]["base_url"] == "https://dotenv.example.openai.azure.com/openai/v1/"
+    assert payload["azure"]["endpoint_source"] == "env:AZURE_OPENAI_ENDPOINT"
+    assert payload["azure"]["deployment"] == "gpt-image-dotenv"
+    assert payload["azure"]["deployment_source"] == "env:AZURE_OPENAI_DEPLOYMENT"
+    assert payload["azure"]["api_key_source"] == "env:AZURE_OPENAI_API_KEY"
+
+
+def test_process_env_overrides_repo_root_dotenv(temporary_repo_dotenv: Path) -> None:
+    temporary_repo_dotenv.write_text(
+        "AZURE_OPENAI_ENDPOINT=https://dotenv.example.openai.azure.com\n"
+        "AZURE_OPENAI_DEPLOYMENT=gpt-image-dotenv\n"
+        "AZURE_OPENAI_API_KEY=dotenv-key\n",
+        encoding="utf-8",
+    )
+    env = {
+        **_env_without_azure_openai(),
+        "AZURE_OPENAI_ENDPOINT": "https://process.example.openai.azure.com",
+        "AZURE_OPENAI_DEPLOYMENT": "gpt-image-process",
+        "AZURE_OPENAI_API_KEY": "process-key",
+    }
+
+    result = _run_cli_with_env(
+        "generate",
+        "--prompt",
+        "dotenv precedence smoke test",
+        "--dry-run",
+        env=env,
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["azure"]["base_url"] == "https://process.example.openai.azure.com/openai/v1/"
+    assert payload["azure"]["deployment"] == "gpt-image-process"
+    assert payload["azure"]["api_key_source"] == "env:AZURE_OPENAI_API_KEY"
 
 
 def test_generate_dry_run_does_not_create_output_dir(tmp_path: Path) -> None:

@@ -1,0 +1,26 @@
+{
+  "name": "azure-imagegen",
+  "version": "0.2.0",
+  "description": "Azure OpenAI v1 image generation and editing plugin for GitHub Copilot CLI with a bundled Python CLI.",
+  "author": {
+    "name": "OpenAssist UK",
+    "url": "https://github.com/openassistuk"
+  },
+  "homepage": "https://github.com/openassistuk/azure-imagegen",
+  "repository": "https://github.com/openassistuk/azure-imagegen",
+  "license": "MIT",
+  "keywords": [
+    "azure-openai",
+    "image-generation",
+    "copilot-cli-plugin",
+    "plugin",
+    "python"
+  ],
+  "category": "Productivity",
+  "tags": [
+    "azure",
+    "image-generation",
+    "openai"
+  ],
+  "skills": "skills/"
+}

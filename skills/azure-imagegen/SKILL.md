@@ -1,6 +1,6 @@
 ---
 name: azure-imagegen
-description: "Generate, edit, and batch-create images with Azure OpenAI v1 Image API. Use when Codex needs Azure-first image generation or image editing workflows for deployed image models, including prompt-to-image, masked edits, background extraction, transparent backgrounds, product shots, UI mockups, or batch JSONL runs, with API key or Entra ID authentication via the bundled CLI (`scripts/image_gen.py`)."
+description: "Generate, edit, and batch-create images with Azure OpenAI v1 Image API. Use when GitHub Copilot CLI needs Azure-first image generation or image editing workflows for deployed image models, including prompt-to-image, masked edits, background extraction, transparent backgrounds, product shots, UI mockups, or batch JSONL runs, with API key or Entra ID authentication via the bundled CLI (`scripts/image_gen.py`)."
 ---
 
 # Azure ImageGen
@@ -23,8 +23,9 @@ Generate or edit images with Azure OpenAI v1 by using the bundled CLI `scripts/i
    - direct CLI value (`--endpoint`, `--deployment`)
    - custom env-var-name flag (`--endpoint-env`, `--deployment-env`, `--api-key-env`)
    - default env var (`AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, `AZURE_OPENAI_API_KEY`)
-4. Run the bundled CLI with `--dry-run` first unless configuration is already known-good.
-5. Inspect outputs, then iterate with one targeted prompt or mask change at a time.
+4. If a `.env` file exists in the repo root, the bundled CLI loads it with `python-dotenv` before resolving configuration; existing process environment variables take precedence.
+5. Run the bundled CLI with `--dry-run` first unless configuration is already known-good.
+6. Inspect outputs, then iterate with one targeted prompt or mask change at a time.
 
 ## Command Selection
 
@@ -40,6 +41,7 @@ Generate or edit images with Azure OpenAI v1 by using the bundled CLI `scripts/i
 - Never ask the user to paste secrets into chat.
 - If `--auth-mode api-key` is used, read the key from an environment variable, not a CLI secret flag.
 - If `--auth-mode entra` is used, require `azure-identity` for live calls.
+- For local configuration, use a repo-root `.env` based on `.env.sample`; do not commit real secrets.
 
 ## Defaults And Rules
 
@@ -107,6 +109,7 @@ Edit:
 ## Dependencies
 
 - Runtime dependencies: `openai` and `pillow`.
+- Dotenv support uses `python-dotenv` to load repo-root `.env` files when present.
 - Add `azure-identity` only for live `--auth-mode entra` runs.
 - Add ImageMagick only when using local `postprocess-transparent`; it shells out to `magick` on PATH.
 - Do not require `rembg`; mention it only as an optional semantic background-removal tool for hair, glass, soft edges, or non-flat backgrounds.

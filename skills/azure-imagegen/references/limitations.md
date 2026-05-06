@@ -18,7 +18,7 @@ This v1 skill is intentionally narrow.
 - Classic Azure OpenAI `api-version` endpoint patterns
 - Responses API runtime support
 - Direct non-Azure OpenAI endpoint support
-- Auto-install into live Codex skill folders
+- Auto-install into live Copilot skill folders
 - Icons, branding assets, CI, or packaging automation
 - Speculative GPT-image-2 size-tier or token-bucket flags before Microsoft publishes Image API parameter names
 - Bundled semantic background removal dependencies such as `rembg`
