@@ -91,10 +91,10 @@ The runtime dependency set is:
 
 ## Quick Start
 
-From the plugin root:
+From the user's project or output directory, using the script path from the plugin root:
 
 ```powershell
-python .\skills\azure-imagegen\scripts\image_gen.py generate `
+python <plugin-root>\skills\azure-imagegen\scripts\image_gen.py generate `
   --endpoint "https://example.openai.azure.com" `
   --deployment "gpt-image-prod" `
   --prompt "Minimal ceramic mug on a clean studio background" `
@@ -109,7 +109,7 @@ AZURE_OPENAI_DEPLOYMENT
 AZURE_OPENAI_API_KEY
 ```
 
-For local development, copy the root `.env.sample` values into a root `.env` file. The CLI loads that file when it exists, while already-exported process environment variables remain authoritative.
+For local development, copy `.env.sample` values into a `.env` file in the current working directory where you run the CLI. The CLI loads the CWD `.env` when it exists, while already-exported process environment variables remain authoritative.
 
 For deeper CLI usage and prompt recipes, use the bundled skill references instead of this README:
 

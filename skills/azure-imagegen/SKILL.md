@@ -13,7 +13,7 @@ Generate or edit images with Azure OpenAI v1 by using the bundled CLI `scripts/i
 - Use the Image API only in v1.
 - Exclude classic Azure `api-version` endpoints.
 - Exclude a Responses API runtime path in v1.
-- Infer GPT-image-2 behavior when the Azure deployment name contains `gpt-image-2`.
+- Infer gpt-image-2 behavior when the Azure deployment name contains `gpt-image-2`.
 
 ## Workflow
 
@@ -25,8 +25,10 @@ Generate or edit images with Azure OpenAI v1 by using the bundled CLI `scripts/i
    - direct CLI value (`--endpoint`, `--deployment`)
    - custom env-var-name flag (`--endpoint-env`, `--deployment-env`, `--api-key-env`)
    - default env var (`AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, `AZURE_OPENAI_API_KEY`)
-6. Run the bundled CLI with `--dry-run` first unless configuration is already known-good.
-7. Inspect outputs, then iterate with one targeted prompt or mask change at a time.
+6. Keep the terminal in the user's working directory; invoke the script by absolute path or stored path variable instead of `cd`-ing into the plugin root.
+7. If the CWD `.env` exists and contains populated `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, and `AZURE_OPENAI_API_KEY` values, treat configuration as known-good and skip the dry-run unless the user asks for one.
+8. Otherwise run the bundled CLI with `--dry-run` first.
+9. Inspect outputs, confirm the output path clearly, and offer to open or display the generated image.
 
 ## Installed Path And Setup
 
@@ -39,16 +41,17 @@ Generate or edit images with Azure OpenAI v1 by using the bundled CLI `scripts/i
 
 ## Environment Files
 
-- The bundled CLI loads `.env` from the plugin root, defined as three directories above `scripts/image_gen.py`; it does not automatically load an arbitrary user working-directory `.env`.
-- If the user's `.env` is in the current project directory rather than the plugin root, explicitly export the needed variables in the shell before invoking the script, or pass non-secret endpoint/deployment values with `--endpoint` and `--deployment`.
-- Existing process environment variables take precedence over values loaded from the plugin-root `.env`.
+- The bundled CLI loads `.env` from the user's current working directory only.
+- Always run the CLI from the user's desired output/project directory so CWD `.env` and relative output paths behave as expected.
+- Existing process environment variables take precedence over values loaded from the CWD `.env`.
+- If both environment variables and CWD `.env` are missing, offer to create a CWD `.env` with placeholders for `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, and `AZURE_OPENAI_API_KEY`.
 - Never ask the user to paste secrets into chat; for API-key auth, use `AZURE_OPENAI_API_KEY` or a custom env var referenced by `--api-key-env`.
 
 ## Command Selection
 
 - If the user provides one or more input images, or asks to retouch, inpaint, mask, localize text, replace a background, or "change only X", use `edit`.
 - If the user needs many prompts or many assets in one run, use `generate-batch`.
-- If the user has a GPT-image-2 result on a flat key-color background and needs a transparent PNG, use `postprocess-transparent`.
+- If the user has a gpt-image-2 result on a flat key-color background and needs a transparent PNG, use `postprocess-transparent`.
 - Otherwise use `generate`.
 
 ## Authentication
@@ -58,7 +61,7 @@ Generate or edit images with Azure OpenAI v1 by using the bundled CLI `scripts/i
 - Never ask the user to paste secrets into chat.
 - If `--auth-mode api-key` is used, read the key from an environment variable, not a CLI secret flag.
 - If `--auth-mode entra` is used, require `azure-identity` for live calls.
-- For local configuration, use a repo-root `.env` based on `.env.sample`; do not commit real secrets.
+- For local configuration, use a CWD `.env` based on `.env.sample`; do not commit real secrets.
 
 ## Defaults And Rules
 
@@ -68,11 +71,11 @@ Generate or edit images with Azure OpenAI v1 by using the bundled CLI `scripts/i
 - For edits, restate invariants every iteration.
 - Use `quality=high` for text-heavy or detail-critical outputs.
 - Use `input_fidelity=high` for identity-preserving or layout-sensitive edits.
-- For GPT-image-2 deployments, use `--size auto` unless the user asks for exact dimensions; when dimensions are not exact, describe requested aspect ratio, framing, and resolution intent in the prompt instead of inventing pixel values.
-- GPT-image-2 explicit sizes must use `WIDTHxHEIGHT` with dimensions aligned to multiples of 16 and at least 655,360 total pixels.
-- GPT-image-2 requests above 8,294,400 pixels are allowed, but Azure may resize the final image to fit.
-- GPT-image-2 does not support native `background=transparent`; use GPT-image-1/1.5 for native transparency, or generate on a flat key color and run `postprocess-transparent`.
-- For GPT-image-2 key-color cutouts, request a pure flat background such as `#00FF00` or `#FF00FF`, no shadows, no reflections, crisp edges, and no use of the key color in the subject.
+- For gpt-image-2 deployments, use `--size auto` unless the user asks for exact dimensions; when dimensions are not exact, describe requested aspect ratio, framing, and resolution intent in the prompt instead of inventing pixel values.
+- gpt-image-2 explicit sizes must use `WIDTHxHEIGHT` with dimensions aligned to multiples of 16 and at least 655,360 total pixels.
+- gpt-image-2 requests above 8,294,400 pixels are allowed, but Azure may resize the final image to fit.
+- gpt-image-2 does not support native `background=transparent`; use GPT-image-1/1.5 for native transparency, or generate on a flat key color and run `postprocess-transparent`.
+- For gpt-image-2 key-color cutouts, request a pure flat background such as `#00FF00` or `#FF00FF`, no shadows, no reflections, crisp edges, and no use of the key color in the subject.
 - Do not invent `smimage`, `image`, `xlimage`, or token-bucket CLI flags until Microsoft publishes official Image API parameter names.
 
 ## Prompt Augmentation
@@ -120,19 +123,21 @@ Edit:
 ## Output Conventions
 
 - Use `tmp/imagegen/` for temporary JSONL files or scratch assets.
-- Write final outputs under `output/imagegen/` when working inside a repo.
+- Write final outputs under the user's CWD, normally `./output/imagegen/`, by passing `--out-dir` for a directory or `--out` for a specific filename.
+- Never use `--output`; it is not a supported flag and can be confused with `--output-format` or `--output-compression`.
 - Keep filenames stable and descriptive by setting `--out` or `--out-dir`.
 
 ## Runtime Expectations
 
-- GPT-image-2 image generations commonly take 1-2 minutes.
+- gpt-image-2 image generations commonly take a few minutes.
 - Complex or busy generations can take several minutes, and extreme cases may take up to 10 minutes.
+- For live API calls, use a long command wait/timeout window, typically 180-600 seconds.
 - Do not assume a live call has failed just because it appears quiet for a few minutes; wait for the CLI result unless the process exits, reports an error, or clearly exceeds the expected window.
 
 ## Dependencies
 
 - Runtime dependencies: `openai` and `pillow`.
-- Dotenv support uses `python-dotenv` to load repo-root `.env` files when present.
+- Dotenv support uses `python-dotenv` to load CWD `.env` files when present.
 - Add `azure-identity` only for live `--auth-mode entra` runs.
 - Add ImageMagick only when using local `postprocess-transparent`; it shells out to `magick` on PATH.
 - Do not require `rembg`; mention it only as an optional semantic background-removal tool for hair, glass, soft edges, or non-flat backgrounds.

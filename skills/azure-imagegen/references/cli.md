@@ -72,7 +72,7 @@ Or:
 uv pip install openai pillow python-dotenv
 ```
 
-The CLI loads `.env` from the plugin root, not from an arbitrary working directory. If configuration lives in the user's current project `.env`, export those variables in the shell before invoking the script.
+Run the CLI from the user's project or output directory. The CLI loads `.env` from the current working directory only; it does not load `.env` from the installed plugin folder. If both process environment variables and CWD `.env` are missing, create a CWD `.env` from `.env.sample` placeholders and fill in the values before running live calls.
 
 Dry-run a generation with default env vars:
 
@@ -96,7 +96,7 @@ Live call with API-key auth:
 uv run --with openai --with pillow python $IMAGE_GEN generate `
   --prompt "A cozy alpine cabin at dawn" `
   --size 1024x1024 `
-  --out ".\output\imagegen\cabin.png"
+  --out-dir ".\output\imagegen"
 ```
 
 GPT-image-2 automatic routing dry-run:
@@ -132,10 +132,13 @@ If dependencies are already installed in the current Python environment, drop th
 ## Guardrails
 
 - Use `python ...\scripts\image_gen.py` or an equivalent full path.
-- Prefer `--dry-run` first when validating config, prompt structure, or output paths.
+- Keep the terminal in the user's CWD; do not `cd` into the plugin root just to run the script.
+- Prefer `--dry-run` first when validating config, prompt structure, or output paths. If CWD `.env` exists with populated endpoint, deployment, and API key values, config is known-good and a live call can skip the dry-run.
+- Use `--out-dir` for an output directory and `--out` for a specific filename. Never use `--output`.
 - Do not pass secrets on the command line.
 - Do not add ad hoc wrapper scripts unless the user explicitly asks for one.
-- Live GPT-image-2 generations usually take 1-2 minutes and can take up to 10 minutes in extreme cases.
+- Live GPT-image-2 generations usually take 2-3 minutes and can take up to 10 minutes in extreme cases; use a 180-600 second wait/timeout window.
+- After a successful generation, report the exact output path and offer to open or display the image.
 
 ## Common recipes
 

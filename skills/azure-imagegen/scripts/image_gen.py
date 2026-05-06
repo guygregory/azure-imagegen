@@ -73,10 +73,21 @@ def _warn(message: str) -> None:
     print(f"Warning: {message}", file=sys.stderr)
 
 
-def _load_repo_dotenv() -> None:
-    dotenv_path = Path(__file__).resolve().parents[3] / ".env"
+def _load_cwd_dotenv() -> None:
+    dotenv_path = Path.cwd() / ".env"
     if dotenv_path.is_file():
         load_dotenv(dotenv_path=dotenv_path, override=False)
+
+
+def _missing_config_hint() -> str:
+    dotenv_path = Path.cwd() / ".env"
+    if dotenv_path.is_file():
+        return f" Check that {dotenv_path} contains AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT, and AZURE_OPENAI_API_KEY when using api-key auth."
+    return (
+        f" No .env file was found in the current working directory ({Path.cwd()}). "
+        "For a new install, create a CWD .env with AZURE_OPENAI_ENDPOINT, "
+        "AZURE_OPENAI_DEPLOYMENT, and AZURE_OPENAI_API_KEY placeholders, then fill them in."
+    )
 
 
 def _read_prompt(prompt: Optional[str], prompt_file: Optional[str]) -> str:
@@ -499,6 +510,7 @@ def _resolve_value(
             message += f" Or use --{flag_name} to choose a different env var name."
     else:
         message = f"{label} is not set. Provide --{flag_name} or set {env_name}."
+    message += _missing_config_hint()
     if dry_run and allow_missing_in_dry_run:
         _warn(message + " Dry-run only.")
         return ResolvedValue(value=None, source=f"missing:{env_name}", env_name=env_name)
@@ -1149,7 +1161,7 @@ def _add_shared_args(parser: argparse.ArgumentParser) -> None:
 
 
 def main() -> int:
-    _load_repo_dotenv()
+    _load_cwd_dotenv()
 
     parser = argparse.ArgumentParser(
         description="Generate or edit images via Azure OpenAI v1 Image API"

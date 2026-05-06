@@ -29,20 +29,24 @@ ONE_PIXEL_PNG = base64.b64decode(
 )
 
 
-def _run_cli(*args: str) -> subprocess.CompletedProcess[str]:
+def _run_cli(*args: str, cwd: Path = REPO_ROOT) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(SCRIPT_PATH), *args],
-        cwd=REPO_ROOT,
+        cwd=cwd,
         capture_output=True,
         text=True,
         check=False,
     )
 
 
-def _run_cli_with_env(*args: str, env: dict[str, str]) -> subprocess.CompletedProcess[str]:
+def _run_cli_with_env(
+    *args: str,
+    env: dict[str, str],
+    cwd: Path = REPO_ROOT,
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(SCRIPT_PATH), *args],
-        cwd=REPO_ROOT,
+        cwd=cwd,
         capture_output=True,
         text=True,
         check=False,
@@ -155,7 +159,7 @@ def test_env_sample_lists_all_supported_env_vars() -> None:
     assert env_var_names == AZURE_OPENAI_ENV_VARS
 
 
-def test_generate_loads_repo_root_dotenv(temporary_repo_dotenv: Path) -> None:
+def test_generate_loads_cwd_dotenv(temporary_repo_dotenv: Path) -> None:
     temporary_repo_dotenv.write_text(
         "AZURE_OPENAI_ENDPOINT=https://dotenv.example.openai.azure.com\n"
         "AZURE_OPENAI_DEPLOYMENT=gpt-image-dotenv\n"
@@ -180,7 +184,7 @@ def test_generate_loads_repo_root_dotenv(temporary_repo_dotenv: Path) -> None:
     assert payload["azure"]["api_key_source"] == "env:AZURE_OPENAI_API_KEY"
 
 
-def test_process_env_overrides_repo_root_dotenv(temporary_repo_dotenv: Path) -> None:
+def test_process_env_overrides_cwd_dotenv(temporary_repo_dotenv: Path) -> None:
     temporary_repo_dotenv.write_text(
         "AZURE_OPENAI_ENDPOINT=https://dotenv.example.openai.azure.com\n"
         "AZURE_OPENAI_DEPLOYMENT=gpt-image-dotenv\n"
@@ -207,6 +211,44 @@ def test_process_env_overrides_repo_root_dotenv(temporary_repo_dotenv: Path) -> 
     assert payload["azure"]["base_url"] == "https://process.example.openai.azure.com/openai/v1/"
     assert payload["azure"]["deployment"] == "gpt-image-process"
     assert payload["azure"]["api_key_source"] == "env:AZURE_OPENAI_API_KEY"
+
+
+def test_generate_ignores_plugin_root_dotenv_when_cwd_differs(tmp_path: Path) -> None:
+    result = _run_cli_with_env(
+        "generate",
+        "--prompt",
+        "missing cwd dotenv smoke test",
+        "--dry-run",
+        env=_env_without_azure_openai(),
+        cwd=tmp_path,
+    )
+
+    assert result.returncode == 1
+    assert "endpoint is not set" in result.stderr
+    assert "No .env file was found in the current working directory" in result.stderr
+
+
+def test_generate_loads_dotenv_from_non_repo_cwd(tmp_path: Path) -> None:
+    (tmp_path / ".env").write_text(
+        "AZURE_OPENAI_ENDPOINT=https://cwd.example.openai.azure.com\n"
+        "AZURE_OPENAI_DEPLOYMENT=gpt-image-cwd\n"
+        "AZURE_OPENAI_API_KEY=cwd-key\n",
+        encoding="utf-8",
+    )
+
+    result = _run_cli_with_env(
+        "generate",
+        "--prompt",
+        "cwd dotenv smoke test",
+        "--dry-run",
+        env=_env_without_azure_openai(),
+        cwd=tmp_path,
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["azure"]["base_url"] == "https://cwd.example.openai.azure.com/openai/v1/"
+    assert payload["azure"]["deployment"] == "gpt-image-cwd"
 
 
 def test_generate_dry_run_does_not_create_output_dir(tmp_path: Path) -> None:
