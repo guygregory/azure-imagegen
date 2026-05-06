@@ -10,7 +10,7 @@ This v1 skill is intentionally narrow.
 - Entra ID auth through `DefaultAzureCredential`
 - JSONL batch generation
 - Prompt augmentation helpers
-- GPT-image-2 size validation and omitted-size routing through Azure OpenAI v1 Image API
+- GPT-image-2 size validation and `size=auto` routing through Azure OpenAI v1 Image API
 - Local ImageMagick key-color post-processing for transparent PNG cutouts
 
 ## Excluded
@@ -28,6 +28,7 @@ This v1 skill is intentionally narrow.
 - The CLI expects an Azure deployment name, not a raw model id.
 - The deployment should target a compatible Azure OpenAI image model deployment.
 - GPT-image-2 behavior is inferred only when the deployment name contains `gpt-image-2`.
+- GPT-image-2 uses `size=auto` when no explicit `WIDTHxHEIGHT` size is provided.
 - GPT-image-2 sizes over 8,294,400 pixels are passed through with a warning because Azure may resize the final image to fit.
 - GPT-image-2 does not support native `background=transparent`; the CLI fails locally and points users to GPT-image-1/1.5 or `postprocess-transparent`.
 - `postprocess-transparent` removes a color key with ImageMagick. It works best on pure flat backgrounds and is not a semantic segmentation tool.

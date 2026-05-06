@@ -19,13 +19,30 @@ Generate or edit images with Azure OpenAI v1 by using the bundled CLI `scripts/i
 
 1. Decide `generate`, `edit`, or `generate-batch`.
 2. Collect prompt(s), exact text, constraints, and any input image(s) or mask(s).
-3. Resolve Azure configuration in this order:
+3. Resolve the plugin root and bundled script path before invoking the CLI.
+4. Install runtime Python dependencies before first live use.
+5. Resolve Azure configuration in this order:
    - direct CLI value (`--endpoint`, `--deployment`)
    - custom env-var-name flag (`--endpoint-env`, `--deployment-env`, `--api-key-env`)
    - default env var (`AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, `AZURE_OPENAI_API_KEY`)
-4. If a `.env` file exists in the repo root, the bundled CLI loads it with `python-dotenv` before resolving configuration; existing process environment variables take precedence.
-5. Run the bundled CLI with `--dry-run` first unless configuration is already known-good.
-6. Inspect outputs, then iterate with one targeted prompt or mask change at a time.
+6. Run the bundled CLI with `--dry-run` first unless configuration is already known-good.
+7. Inspect outputs, then iterate with one targeted prompt or mask change at a time.
+
+## Installed Path And Setup
+
+- When working from this repository, the plugin root is the repo root and the script is `skills/azure-imagegen/scripts/image_gen.py`.
+- After `copilot plugin install <owner>/azure-imagegen`, resolve the installed plugin root under the Copilot plugin cache, commonly `~/.copilot/installed-plugins/_direct/<owner>--azure-imagegen/`; on Windows use `$HOME\.copilot\installed-plugins\_direct\<owner>--azure-imagegen\`.
+- The installed script path is normally `<plugin-root>/skills/azure-imagegen/scripts/image_gen.py`.
+- If the exact cache path is uncertain, search for `skills/azure-imagegen/scripts/image_gen.py` under `~/.copilot/installed-plugins/` and use the discovered absolute path.
+- Before first use in a Python environment, install runtime dependencies from the plugin root with `python -m pip install -e <plugin-root>`.
+- For live Entra-authenticated calls, install the optional extra with `python -m pip install -e "<plugin-root>[entra]"` or install `azure-identity` separately.
+
+## Environment Files
+
+- The bundled CLI loads `.env` from the plugin root, defined as three directories above `scripts/image_gen.py`; it does not automatically load an arbitrary user working-directory `.env`.
+- If the user's `.env` is in the current project directory rather than the plugin root, explicitly export the needed variables in the shell before invoking the script, or pass non-secret endpoint/deployment values with `--endpoint` and `--deployment`.
+- Existing process environment variables take precedence over values loaded from the plugin-root `.env`.
+- Never ask the user to paste secrets into chat; for API-key auth, use `AZURE_OPENAI_API_KEY` or a custom env var referenced by `--api-key-env`.
 
 ## Command Selection
 
@@ -51,7 +68,7 @@ Generate or edit images with Azure OpenAI v1 by using the bundled CLI `scripts/i
 - For edits, restate invariants every iteration.
 - Use `quality=high` for text-heavy or detail-critical outputs.
 - Use `input_fidelity=high` for identity-preserving or layout-sensitive edits.
-- For GPT-image-2 deployments, omit `--size` unless the user asks for an explicit resolution; Azure can route automatically when size is not set.
+- For GPT-image-2 deployments, use `--size auto` unless the user asks for exact dimensions; when dimensions are not exact, describe requested aspect ratio, framing, and resolution intent in the prompt instead of inventing pixel values.
 - GPT-image-2 explicit sizes must use `WIDTHxHEIGHT` with dimensions aligned to multiples of 16 and at least 655,360 total pixels.
 - GPT-image-2 requests above 8,294,400 pixels are allowed, but Azure may resize the final image to fit.
 - GPT-image-2 does not support native `background=transparent`; use GPT-image-1/1.5 for native transparency, or generate on a flat key color and run `postprocess-transparent`.
@@ -105,6 +122,12 @@ Edit:
 - Use `tmp/imagegen/` for temporary JSONL files or scratch assets.
 - Write final outputs under `output/imagegen/` when working inside a repo.
 - Keep filenames stable and descriptive by setting `--out` or `--out-dir`.
+
+## Runtime Expectations
+
+- GPT-image-2 image generations commonly take 1-2 minutes.
+- Complex or busy generations can take several minutes, and extreme cases may take up to 10 minutes.
+- Do not assume a live call has failed just because it appears quiet for a few minutes; wait for the CLI result unless the process exits, reports an error, or clearly exceeds the expected window.
 
 ## Dependencies
 

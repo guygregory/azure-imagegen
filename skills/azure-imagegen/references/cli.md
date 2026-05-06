@@ -14,7 +14,7 @@ Real API calls require network access. `--dry-run` does not.
 ## Default configuration
 
 - Deployment source: explicit `--deployment` or `AZURE_OPENAI_DEPLOYMENT`
-- Size: `1024x1024` for legacy deployments; omitted by default for deployments whose name contains `gpt-image-2`
+- Size: `1024x1024` for legacy deployments; `auto` by default for deployments whose name contains `gpt-image-2`
 - Quality: `high`
 - Output format: `png`
 - Auth mode: `api-key`
@@ -45,17 +45,34 @@ Set a stable path to the skill CLI from the repo root:
 $IMAGE_GEN = ".\skills\azure-imagegen\scripts\image_gen.py"
 ```
 
-Install dependencies first with either:
+After plugin install from GitHub, the installed script is normally at:
+
+```powershell
+$PLUGIN_ROOT = Join-Path $HOME ".copilot\installed-plugins\_direct\<owner>--azure-imagegen"
+$IMAGE_GEN = Join-Path $PLUGIN_ROOT "skills\azure-imagegen\scripts\image_gen.py"
+```
+
+If the cache path differs, search under `$HOME\.copilot\installed-plugins\` for `skills\azure-imagegen\scripts\image_gen.py`.
+
+Install dependencies from the plugin root before first live use:
 
 ```bash
-python -m pip install openai pillow
+python -m pip install -e <plugin-root>
+```
+
+Or install direct dependencies with:
+
+```bash
+python -m pip install openai pillow python-dotenv
 ```
 
 Or:
 
 ```bash
-uv pip install openai pillow
+uv pip install openai pillow python-dotenv
 ```
+
+The CLI loads `.env` from the plugin root, not from an arbitrary working directory. If configuration lives in the user's current project `.env`, export those variables in the shell before invoking the script.
 
 Dry-run a generation with default env vars:
 
@@ -88,6 +105,7 @@ GPT-image-2 automatic routing dry-run:
 python $IMAGE_GEN generate `
   --deployment "gpt-image-2-prod" `
   --prompt "A crisp ecommerce campaign image for a travel mug" `
+  --size auto `
   --dry-run
 ```
 
@@ -117,6 +135,7 @@ If dependencies are already installed in the current Python environment, drop th
 - Prefer `--dry-run` first when validating config, prompt structure, or output paths.
 - Do not pass secrets on the command line.
 - Do not add ad hoc wrapper scripts unless the user explicitly asks for one.
+- Live GPT-image-2 generations usually take 1-2 minutes and can take up to 10 minutes in extreme cases.
 
 ## Common recipes
 

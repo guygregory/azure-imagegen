@@ -136,9 +136,12 @@ def _validate_size(size: Optional[str], *, deployment: str) -> None:
     if size is None:
         return
 
+    if size == "auto":
+        return
+
     parsed = _parse_size(size)
     if parsed is None:
-        _die("size must be WIDTHxHEIGHT or omitted for GPT-image-2 deployments.")
+        _die("size must be auto, WIDTHxHEIGHT, or omitted for GPT-image-2 deployments.")
 
     width, height = parsed
     if width % 16 != 0 or height % 16 != 0:
@@ -157,7 +160,7 @@ def _effective_size(size: Optional[str], *, deployment: str) -> Optional[str]:
     if size is not None:
         return size
     if _is_gpt_image_2_deployment(deployment):
-        return None
+        return "auto"
     return DEFAULT_SIZE
 
 
@@ -951,7 +954,7 @@ def _generate(args: argparse.Namespace, config: AzureRuntimeConfig) -> None:
         return
 
     print(
-        "Calling Azure OpenAI Image API (generation). This can take up to a couple of minutes.",
+        "Calling Azure OpenAI Image API (generation). GPT-image-2 commonly takes 1-2 minutes and can take up to 10 minutes in extreme cases.",
         file=sys.stderr,
     )
     started = time.time()
@@ -1020,7 +1023,7 @@ def _edit(args: argparse.Namespace, config: AzureRuntimeConfig) -> None:
         return
 
     print(
-        f"Calling Azure OpenAI Image API (edit) with {len(image_paths)} image(s).",
+        f"Calling Azure OpenAI Image API (edit) with {len(image_paths)} image(s). GPT-image-2 commonly takes 1-2 minutes and can take up to 10 minutes in extreme cases.",
         file=sys.stderr,
     )
     started = time.time()

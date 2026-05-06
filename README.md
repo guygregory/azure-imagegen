@@ -30,8 +30,10 @@ copilot plugin install .
 Install from GitHub:
 
 ```powershell
-copilot plugin install openassistuk/azure-imagegen
+copilot plugin install <owner>/azure-imagegen
 ```
+
+Replace `<owner>` with the GitHub account or organization that hosts the repository.
 
 List installed plugins:
 
@@ -120,7 +122,7 @@ For deeper CLI usage and prompt recipes, use the bundled skill references instea
 
 This plugin supports Microsoft Foundry GPT-image-2 deployments through the same Azure OpenAI v1 Image API path. The CLI infers GPT-image-2 behavior when the deployment name contains `gpt-image-2`.
 
-- Omit `--size` for GPT-image-2 to let Azure's routing layer select the generation configuration.
+- Use `--size auto` for GPT-image-2 to let Azure's routing layer select the generation configuration. If no `--size` is passed, the CLI uses `auto` for GPT-image-2 deployments.
 - Pass explicit sizes such as `3840x2160`, `2160x3840`, `1024x1024`, `1536x1024`, `1024x1536`, or another `WIDTHxHEIGHT` value with both dimensions aligned to multiples of 16.
 - Explicit GPT-image-2 sizes must be at least 655,360 pixels. Requests over 8,294,400 pixels are allowed with a warning because Azure may resize the final output.
 - The Microsoft announcement names legacy size tiers and token buckets, but this plugin does not expose guessed flags for them until Microsoft publishes official Image API parameter names.

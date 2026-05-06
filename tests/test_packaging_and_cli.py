@@ -283,13 +283,21 @@ def test_generate_batch_dry_run_does_not_create_output_dir(tmp_path: Path) -> No
     assert payload["outputs"] == [str(out_dir / "001-batch-smoke-test.png")]
 
 
-def test_gpt_image_2_omits_default_size_for_routing() -> None:
+def test_gpt_image_2_uses_auto_size_for_routing() -> None:
     result = _run_generate("gpt-image-2-prod")
 
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
     assert payload["model"] == "gpt-image-2-prod"
-    assert "size" not in payload
+    assert payload["size"] == "auto"
+
+
+def test_gpt_image_2_accepts_explicit_auto_size() -> None:
+    result = _run_generate("gpt-image-2-prod", "--size", "auto")
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["size"] == "auto"
 
 
 @pytest.mark.parametrize("size", ["3840x2160", "2160x3840", "1280x720"])
