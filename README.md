@@ -109,7 +109,7 @@ AZURE_OPENAI_DEPLOYMENT
 AZURE_OPENAI_API_KEY
 ```
 
-For local development, copy `.env.sample` values into a `.env` file in the current working directory where you run the CLI. The CLI loads the CWD `.env` when it exists, while already-exported process environment variables remain authoritative.
+For local development, copy `.env.sample` values into a `.env` file in the current working directory where you run the CLI. The CLI loads the CWD `.env` when it exists, while already-exported process environment variables remain authoritative. If you create this `.env`, add `.env` to the CWD `.gitignore`; create `.gitignore` if needed.
 
 For deeper CLI usage and prompt recipes, use the bundled skill references instead of this README:
 

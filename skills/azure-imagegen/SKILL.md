@@ -45,6 +45,7 @@ Generate or edit images with Azure OpenAI v1 by using the bundled CLI `scripts/i
 - Always run the CLI from the user's desired output/project directory so CWD `.env` and relative output paths behave as expected.
 - Existing process environment variables take precedence over values loaded from the CWD `.env`.
 - If both environment variables and CWD `.env` are missing, offer to create a CWD `.env` with placeholders for `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT`, and `AZURE_OPENAI_API_KEY`.
+- When creating a CWD `.env` for the user, ensure the CWD `.gitignore` contains `.env`; create `.gitignore` first if it does not exist.
 - Never ask the user to paste secrets into chat; for API-key auth, use `AZURE_OPENAI_API_KEY` or a custom env var referenced by `--api-key-env`.
 
 ## Command Selection
@@ -61,7 +62,7 @@ Generate or edit images with Azure OpenAI v1 by using the bundled CLI `scripts/i
 - Never ask the user to paste secrets into chat.
 - If `--auth-mode api-key` is used, read the key from an environment variable, not a CLI secret flag.
 - If `--auth-mode entra` is used, require `azure-identity` for live calls.
-- For local configuration, use a CWD `.env` based on `.env.sample`; do not commit real secrets.
+- For local configuration, use a CWD `.env` based on `.env.sample`; ensure CWD `.gitignore` excludes `.env` and do not commit real secrets.
 
 ## Defaults And Rules
 

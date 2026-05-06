@@ -18,7 +18,7 @@ AZURE_OPENAI_DEPLOYMENT
 AZURE_OPENAI_API_KEY
 ```
 
-For local development, place these values in a `.env` file in the user's current working directory based on `.env.sample`. The CLI loads the CWD `.env` when present, and process environment variables override matching `.env` entries.
+For local development, place these values in a `.env` file in the user's current working directory based on `.env.sample`. The CLI loads the CWD `.env` when present, and process environment variables override matching `.env` entries. If you create this `.env`, add `.env` to the CWD `.gitignore`; create `.gitignore` if needed.
 
 Use custom env-var names when a team already standardizes different names:
 

@@ -72,7 +72,7 @@ Or:
 uv pip install openai pillow python-dotenv
 ```
 
-Run the CLI from the user's project or output directory. The CLI loads `.env` from the current working directory only; it does not load `.env` from the installed plugin folder. If both process environment variables and CWD `.env` are missing, create a CWD `.env` from `.env.sample` placeholders and fill in the values before running live calls.
+Run the CLI from the user's project or output directory. The CLI loads `.env` from the current working directory only; it does not load `.env` from the installed plugin folder. If both process environment variables and CWD `.env` are missing, create a CWD `.env` from `.env.sample` placeholders and fill in the values before running live calls. When creating that `.env`, also add `.env` to the CWD `.gitignore`; create `.gitignore` if it does not exist.
 
 Dry-run a generation with default env vars:
 
